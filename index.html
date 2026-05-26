@@ -29,7 +29,7 @@ header h1{font-size:1.4rem;font-weight:700}header h1 span{color:var(--accent2)}
 .icon-btn:hover{color:var(--text);background:var(--surface2)}
 
 /* Gamification Widgets */
-.gamify-banner{background:linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:between;gap:12px}
+.gamify-banner{background:linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .xp-bar-wrap{flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden;margin-top:4px}
 .xp-bar-fill{height:100%;background:linear-gradient(90deg, var(--accent), var(--accent2));width:0%;transition:width .5s ease}
 .streak-badge{background:rgba(241,112,85,0.15);color:var(--orange);padding:4px 10px;border-radius:20px;font-size:0.75rem;font-weight:700;display:flex;align-items:center;gap:4px}
@@ -707,8 +707,8 @@ const DEFAULT_CATEGORIES={
 
 const RISK_PROFILES={
   conservative:{label:'Konservativ',emoji:'🛡️',alloc:[{name:'World ETF',detail:'MSCI / FTSE',pct:60,color:'var(--green)'},{name:'Anleihen',detail:'Staatsanleihen',pct:40,color:'var(--blue)'}],products:[{name:'Vanguard FTSE All-World (A2PKXG)',type:'ETF',note:'Core-Investment'}]},
-  balanced:{label:'Ausgewogen',emoji:'⚖️',alloc:[{name:'World ETF',detail:'All-World',pct:60,color:'var(--green)'},{name:'Einzelaktien',detail:'Large Caps',pct:30,color:'var(--orange)'},{name:'Crypto',detail:'BTC & ETH',pct:10,color:'var(--accent)'}],products:[{name:'Vanguard FTSE All-World',type:'ETF',note:'Basis'}]},
-  aggressive:{label:'Wachstum',emoji:'🚀',alloc:[{name:'World ETF',detail:'All-World',pct:50,color(--green)},{name:'Tech-Fokus',detail:'Nasdaq / Sektoren',pct:20,color:'var(--blue)'},{name:'Aktien',detail:'Growth Stocks',pct:20,color:'var(--orange)'},{name:'Crypto',detail:'BTC, ETH, SOL',pct:10,color:'var(--yellow)'}],products:[{name:'Vanguard FTSE All-World',type:'ETF',note:'Basis'}]},
+  balanced:{label:'Ausgewogen',emoji:'⚖️',alloc:[{name:'World ETF',detail:'All-World',pct:60,color:'var(--green)'},{name:'Einzelaktien',detail:'Large Caps',pct:30,color:'var(--orange)'},{name(--accent)'}],products:[{name:'Vanguard FTSE All-World',type:'ETF',note:'Basis'}]},
+  aggressive:{label:'Wachstum',emoji:'🚀',alloc:[{name:'World ETF',detail:'All-World',pct:50,color:'var(--green)'},{name:'Tech-Fokus',detail:'Nasdaq / Sektoren',pct:20,color:'var(--blue)'},{name:'Aktien',detail:'Growth Stocks',pct:20,color:'var(--orange)'},{name:'Crypto',detail:'BTC, ETH, SOL',pct:10,color:'var(--yellow)'}],products:[{name:'Vanguard FTSE All-World',type:'ETF',note:'Basis'}]},
   yolo:{label:'Aggressiv',emoji:'🎰',alloc:[{name:'Leveraged ETF',detail:'2x MSCI World',pct:30,color:'var(--green)'},{name:'High-Beta Stocks',detail:'Growth / Reddit',pct:40,color:'var(--orange)'},{name:'Crypto',detail:'Alts & Majors',pct:30,color:'var(--yellow)'}],products:[{name:'Amundi MSCI World 2x Hebel (A0X8ZS)',type:'ETF',note:'Extremes Risiko'}]}
 };
 
@@ -725,12 +725,16 @@ let chartBreakdown=null,chartTrend=null,chartSavings=null,chartNetWorth=null,cha
 let obStocks=[],obCrypto=[],searchTimeout=null,currentDetailAsset=null;
 
 function loadState(){
-  const s=localStorage.getItem('finanzplaner_data');
-  if(s)try{return JSON.parse(s)}catch(e){}
+  try {
+    const s=localStorage.getItem('finanzplaner_data');
+    if(s) return JSON.parse(s);
+  } catch(e){ console.error("Fehler beim Laden des LocalStorage:", e); }
   return null;
 }
 function saveState(){
-  localStorage.setItem('finanzplaner_data',JSON.stringify(state));
+  try {
+    localStorage.setItem('finanzplaner_data',JSON.stringify(state));
+  } catch(e){ console.error("Fehler beim Speichern im LocalStorage:", e); }
 }
 function uid(){return Date.now().toString(36)+Math.random().toString(36).substr(2,5)}
 function fmt(n){return n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €'}
@@ -740,26 +744,37 @@ function toDateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart
 
 // ─── INIT ───
 function init(){
-  if(!state||!state.profile){
-    document.getElementById('onboarding-wrap').classList.add('active');
-    document.getElementById('main-app').classList.remove('active');
-  }else{
-    // Strukturabsicherungen & Migrationen
-    if(!state.balanceSnapshots)state.balanceSnapshots={};
-    if(!state.portfolio)state.portfolio=[];
-    if(!state.manualAssets)state.manualAssets=[];
-    if(!state.xp)state.xp=0;
-    if(!state.level)state.level=1;
-    if(!state.lastActiveDate)state.lastActiveDate=toDateStr(new Date());
-    if(!state.streak)state.streak=0;
+  try {
+    if(!state||!state.profile){
+      document.getElementById('onboarding-wrap').classList.add('active');
+      document.getElementById('main-app').classList.remove('active');
+      runSplash(() => {});
+    }else{
+      // Fallback-Strukturen absichern
+      if(!state.balanceSnapshots)state.balanceSnapshots={};
+      if(!state.portfolio)state.portfolio=[];
+      if(!state.manualAssets)state.manualAssets=[];
+      if(!state.xp)state.xp=0;
+      if(!state.level)state.level=1;
+      if(!state.lastActiveDate)state.lastActiveDate=toDateStr(new Date());
+      if(!state.streak)state.streak=1;
+      if(!state.watchlist)state.watchlist={stocks:['NVDA'], crypto:['BTC']};
+      if(!state.marketCache)state.marketCache={stocks:{},crypto:{}};
 
-    document.getElementById('onboarding-wrap').classList.remove('active');
-    document.getElementById('main-app').classList.add('active');
-    setupTabs();
-    checkStreak();
-    renderAll();
-    refreshMarketData();
-    checkMonthlyCheckin();
+      document.getElementById('onboarding-wrap').classList.remove('active');
+      document.getElementById('main-app').classList.add('active');
+      setupTabs();
+      checkStreak();
+      
+      runSplash(() => {
+        renderAll();
+        refreshMarketData();
+        checkMonthlyCheckin();
+      });
+    }
+  } catch (err) {
+    document.getElementById('splash-status').innerHTML = "🛑 Fehler beim Start. <br><button onclick='resetAll()' style='margin-top:10px;padding:6px;background:var(--red);color:#fff;border:none;border-radius:4px;'>App zurücksetzen</button>";
+    console.error(err);
   }
 }
 
@@ -771,11 +786,10 @@ function checkStreak() {
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
   if (diffDays === 1) {
-    // Fortlaufende tägliche/wöchentliche Nutzung (vereinfacht als Aktivitätstage gezählt)
     state.streak++;
     addXP(10);
   } else if (diffDays > 1) {
-    state.streak = 1; // Streak gerissen, Neustart
+    state.streak = 1;
   }
   state.lastActiveDate = toDateStr(today);
   saveState();
@@ -796,16 +810,17 @@ function addXP(amount) {
 }
 
 function updateGamifyUI() {
-  document.getElementById('streak-count').textContent = state.streak;
-  document.getElementById('gamify-level-label').textContent = `Level ${state.level} Finanz-Master`;
-  const xpNeeded = state.level * 100;
-  document.getElementById('gamify-xp-label').textContent = `${state.xp} / ${xpNeeded} XP`;
-  const pct = (state.xp / xpNeeded) * 100;
+  if(!state) return;
+  document.getElementById('streak-count').textContent = state.streak || 1;
+  document.getElementById('gamify-level-label').textContent = `Level ${state.level || 1} Finanz-Master`;
+  const xpNeeded = (state.level || 1) * 100;
+  document.getElementById('gamify-xp-label').textContent = `${state.xp || 0} / ${xpNeeded} XP`;
+  const pct = ((state.xp || 0) / xpNeeded) * 100;
   document.getElementById('xp-bar-fill').style.width = `${pct}%`;
 }
 
 function triggerConfetti() {
-  confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+  try { confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } }); } catch(e){}
 }
 
 // ─── ONBOARDING ───
@@ -872,12 +887,11 @@ function finishOnboarding(){
     version:4
   };
   
-  // Setze ersten Snapshot
   const now = new Date();
   state.balanceSnapshots[`${now.getFullYear()}-${now.getMonth()}`] = { cash: startBalance, depot: 0, manual: 0 };
   
   saveState();
-  init();
+  location.reload();
 }
 
 // ─── PAGES & TABS ───
@@ -955,12 +969,63 @@ function saveEntry(){
   const amount=parseFloat(document.getElementById('entry-amount').value);
   if(!amount)return;
   state.entries.push({id:uid(),type:entryType,catId:document.getElementById('entry-category').value,sub:document.getElementById('entry-subcategory').value,amount,date:document.getElementById('entry-date').value,note:document.getElementById('entry-note').value});
-  addXP(15); // Belohnung fürs Eintragen
+  addXP(15);
   saveState();closeModal('entry-modal');renderAll();
 }
 function deleteEntry(id){state.entries=state.entries.filter(e=>e.id!==id);saveState();renderAll()}
 
-// ─── HISTORISCHES NET WORTH TRACKING (REPARIERT) ───
+// ─── TRENDS ───
+function setTrendMonths(n,btn){
+  trendMonths=n;
+  btn.parentElement.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  renderTrends();
+}
+function renderTrends(){
+  const months=[];let y=currentYear,m=currentMonth;
+  for(let i=trendMonths-1;i>=0;i--){let tm=m-i,ty=y;while(tm<0){tm+=12;ty--}months.push({y:ty,m:tm})}
+  const labels=months.map(x=>MONTHS_DE[x.m].substr(0,3)+' '+(x.y%100));
+  const incomes=months.map(x=>getMonthEntries(x.y,x.m).filter(e=>e.type==='income').reduce((s,e)=>s+e.amount,0));
+  const expenses=months.map(x=>getMonthEntries(x.y,x.m).filter(e=>e.type==='expense').reduce((s,e)=>s+e.amount,0));
+  const savings=incomes.map((inc,i)=>inc-expenses[i]);
+  
+  const ctx1=document.getElementById('chart-trend').getContext('2d');
+  if(chartTrend)chartTrend.destroy();
+  chartTrend=new Chart(ctx1,{type:'bar',data:{labels,datasets:[{label:'Einnahmen',data:incomes,backgroundColor:'rgba(0,184,148,.7)'},{label:'Ausgaben',data:expenses,backgroundColor:'rgba(255,107,107,.7)'}]},options:{responsive:true}});
+
+  const ctx2=document.getElementById('chart-savings').getContext('2d');
+  if(chartSavings)chartSavings.destroy();
+  chartSavings=new Chart(ctx2,{type:'line',data:{labels,datasets:[{label:'Bilanz',data:savings,borderColor:'#6c5ce7',fill:true}]},options:{responsive:true}});
+}
+
+// ─── RECURRING ───
+function renderRecurring(){
+  const incR=state.recurring.filter(r=>r.type==='income');
+  const expR=state.recurring.filter(r=>r.type==='expense');
+  document.getElementById('recurring-income').innerHTML=incR.map(renderRecItem).join('');
+  document.getElementById('recurring-expenses').innerHTML=expR.map(renderRecItem).join('');
+}
+function renderRecItem(r){
+  const c=getCat(r.catId);
+  return`<div class="recurring-item"><div class="cat-dot" style="background:${c.color}"></div><div class="cat-name">${r.note||c.name}</div><div class="entry-amount">${fmt(r.amount)}</div><div class="entry-actions"><button onclick="deleteRecurring('${r.id}')">🗑️</button></div></div>`;
+}
+function openRecurringModal(){populateCatSel('rec','expense'); openModal('recurring-modal');}
+function setRecurringType(t){recurringType=t; populateCatSel('rec',t)}
+function saveRecurring(){
+  const amount=parseFloat(document.getElementById('rec-amount').value);
+  if(!amount)return;
+  state.recurring.push({id:uid(),type:recurringType,catId:document.getElementById('rec-category').value,sub:document.getElementById('rec-subcategory').value,amount,note:document.getElementById('rec-note').value});
+  saveState();closeModal('recurring-modal');renderRecurring();
+}
+function deleteRecurring(id){state.recurring=state.recurring.filter(r=>r.id!==id);saveState();renderRecurring()}
+function manualApplyRecurring(){
+  state.recurring.forEach(r=>{
+    state.entries.push({id:uid(),type:r.type,catId:r.catId,sub:r.sub,amount:r.amount,date:toDateStr(new Date()),note:r.note});
+  });
+  saveState();toast('Fixkosten verbucht');renderAll();
+}
+
+// ─── HISTORISCHES NET WORTH TRACKING ───
 function getEffectiveCash() {
   const snapshots = state.balanceSnapshots || {};
   const keys = Object.keys(snapshots).sort();
@@ -970,7 +1035,7 @@ function getEffectiveCash() {
   if (keys.length) {
     const lastKey = keys[keys.length - 1];
     const [sy, sm] = lastKey.split('-').map(Number);
-    baseBalance = snapshots[lastKey].cash; // Ziehe Cash-Komponente aus strukturiertem Snapshot
+    baseBalance = snapshots[lastKey].cash || snapshots[lastKey];
     baseYear = sy; baseMonth = sm;
   }
   
@@ -986,10 +1051,11 @@ function getEffectiveCash() {
 
 function getDepotValueEUR() {
   let total = 0;
+  if(!state.portfolio) return 0;
   state.portfolio.forEach(p => {
     let price = p.buyPrice;
     if (p.assetType === 'crypto') {
-      const cache = state.marketCache.crypto[CRYPTO_MAP[p.ticker] || p.ticker.toLowerCase()];
+      const cache = state.marketCache.crypto[(CRYPTO_MAP[p.ticker] || p.ticker).toLowerCase()];
       if (cache) price = cache.eur;
     } else {
       const cache = state.marketCache.stocks[p.ticker];
@@ -1000,25 +1066,23 @@ function getDepotValueEUR() {
   return total;
 }
 
-function getManualAssetsTotal() { return state.manualAssets.reduce((s,a)=>s+a.value,0); }
+function getManualAssetsTotal() { return state.manualAssets ? state.manualAssets.reduce((s,a)=>s+a.value,0) : 0; }
 
 function buildNwHistory() {
   const history = [];
   const now = new Date();
   
-  // Generiere dynamisch die letzten X Monate
   for (let i = nwMonths - 1; i >= 0; i--) {
     let m = now.getMonth() - i;
     let y = now.getFullYear();
     while(m < 0) { m += 12; y--; }
     
     const key = `${y}-${m}`;
-    // Nutze historischen Snapshot falls vorhanden, ansonsten Fallback auf aktuelle Realwerte
-    if (state.balanceSnapshots && state.balanceSnapshots[key]) {
+    if (state.balanceSnapshots && state.balanceSnapshots[key] && typeof state.balanceSnapshots[key] === 'object') {
       const snap = state.balanceSnapshots[key];
-      history.push({ year: y, month: m, cash: snap.cash, depot: snap.depot, manual: snap.manual, total: snap.cash + snap.depot + snap.manual });
+      history.push({ year: y, month: m, cash: snap.cash||0, depot: snap.depot||0, manual: snap.manual||0, total: (snap.cash||0) + (snap.depot||0) + (snap.manual||0) });
     } else {
-      const cash = getEffectiveCash(); // Fallback für Monate ohne expliziten Snapshot
+      const cash = getEffectiveCash();
       const depot = getDepotValueEUR();
       const manual = getManualAssetsTotal();
       history.push({ year: y, month: m, cash, depot, manual, total: cash + depot + manual });
@@ -1060,6 +1124,8 @@ function renderNetWorth() {
   renderManualAssetsList();
 }
 
+function setNwMonths(n) { nwMonths = n; renderNetWorth(); }
+
 // ─── PORTFOLIO & MANUAL ASSETS ───
 function renderPortfolioList() {
   document.getElementById('portfolio-list').innerHTML = state.portfolio.map(p => `
@@ -1070,6 +1136,7 @@ function renderPortfolioList() {
     </div>
   `).join('');
 }
+function openPortfolioModal() { openModal('portfolio-modal'); }
 function savePortfolioPosition() {
   state.portfolio.push({ id: uid(), ticker: document.getElementById('pm-ticker').value, assetType: document.getElementById('pm-assettype').value, shares: parseFloat(document.getElementById('pm-shares').value), buyPrice: parseFloat(document.getElementById('pm-buyprice').value), label: document.getElementById('pm-label').value });
   saveState(); closeModal('portfolio-modal'); renderNetWorth();
@@ -1085,18 +1152,18 @@ function renderManualAssetsList() {
     </div>
   `).join('');
 }
+function openManualAssetModal() { openModal('manual-asset-modal'); }
 function saveManualAsset() {
   state.manualAssets.push({ id: uid(), label: document.getElementById('ma-label').value, category: document.getElementById('ma-category').value, value: parseFloat(document.getElementById('ma-value').value) });
   saveState(); closeModal('manual-asset-modal'); renderNetWorth();
 }
 function deleteManualAsset(id) { state.manualAssets=state.manualAssets.filter(a=>a.id!==id); saveState(); renderNetWorth(); }
 
-// ─── YAHOO FINANCE & COINGECKO ENGINE (CORS PROXY RESILIENT) ───
+// ─── YAHOO FINANCE & COINGECKO ENGINE ───
 async function refreshMarketData(){
   const spin=document.getElementById('refresh-spin'); if(spin) spin.style.display='inline-block';
   
-  // 1. Crypto Engine
-  const cryptos = state.watchlist.crypto;
+  const cryptos = state.watchlist.crypto || [];
   if(cryptos.length) {
     try {
       const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${cryptos.map(c=>CRYPTO_MAP[c]||c.toLowerCase()).join(',')}&vs_currencies=eur&include_24hr_change=true`);
@@ -1104,8 +1171,7 @@ async function refreshMarketData(){
     } catch(e) { console.log("CoinGecko Fetch blockiert."); }
   }
 
-  // 2. Stocks Engine via Multi-Proxy Fallback
-  const stocks = state.watchlist.stocks;
+  const stocks = state.watchlist.stocks || [];
   if(stocks.length) {
     let done = false;
     const proxies = [
@@ -1139,13 +1205,47 @@ async function refreshMarketData(){
 
 function renderMarket(){
   const sCache = state.marketCache.stocks || {};
-  document.getElementById('watchlist-stocks').innerHTML = state.watchlist.stocks.map(t => {
+  document.getElementById('watchlist-stocks').innerHTML = (state.watchlist.stocks || []).map(t => {
     const d = sCache[t];
     return `<div class="watch-item"><div class="watch-ticker">${t}</div><div class="watch-name">${d?.name||''}</div><div class="watch-price">${d?fmt(d.price):'—'}</div><div class="watch-change ${d?.change>=0?'up':'down'}">${d?d.change.toFixed(2)+'%':''}</div></div>`;
   }).join('');
+
+  const cCache = state.marketCache.crypto || {};
+  document.getElementById('watchlist-crypto').innerHTML = (state.watchlist.crypto || []).map(t => {
+    const d = cCache[(CRYPTO_MAP[t] || t).toLowerCase()];
+    return `<div class="watch-item"><div class="watch-ticker">${t}</div><div class="watch-name">${t}</div><div class="watch-price">${d?fmt(d.eur):'—'}</div><div class="watch-change ${d?.eur_24h_change>=0?'up':'down'}">${d?d.eur_24h_change.toFixed(2)+'%':''}</div></div>`;
+  }).join('');
 }
 
-// ─── MONTHLY CHECKIN & HISTORIC SNAPSHOT ENGINE (REPARIERT) ───
+// ─── INVEST ───
+function renderInvest() {
+  const p = state.profile;
+  const rp = RISK_PROFILES[p.risk] || RISK_PROFILES.balanced;
+  document.getElementById('inv-income').textContent = fmt(p.income);
+  document.getElementById('inv-budget').textContent = fmt(p.investBudget);
+  document.getElementById('inv-risk').textContent = rp.emoji + ' ' + rp.label;
+  
+  document.getElementById('alloc-bar').innerHTML = rp.alloc.map(a=>`<div class="progress-seg" style="width:${a.pct}%;background:${a.color}"></div>`).join('');
+  document.getElementById('alloc-list').innerHTML = rp.alloc.map(a=>`<div class="alloc-item"><div class="cat-dot" style="background:${a.color}"></div><div class="alloc-name">${a.name}</div><div class="alloc-pct">${a.pct}%</div></div>`).join('');
+  document.getElementById('product-recommendations').innerHTML = rp.products.map(pr=>`<div class="strategy-card"><h3>${pr.name}</h3><p>${pr.note}</p></div>`).join('');
+}
+
+// ─── SETTINGS ───
+function renderSettings() {
+  document.getElementById('set-name').value = state.profile.name || '';
+  document.getElementById('set-income').value = state.profile.income || '';
+  document.getElementById('set-invest').value = state.profile.investBudget || '';
+  document.getElementById('set-risk').value = state.profile.risk || 'balanced';
+}
+function saveSettings() {
+  state.profile.name = document.getElementById('set-name').value;
+  state.profile.income = parseFloat(document.getElementById('set-income').value);
+  state.profile.investBudget = parseFloat(document.getElementById('set-invest').value);
+  state.profile.risk = document.getElementById('set-risk').value;
+  saveState(); toast('Gespeichert'); renderAll();
+}
+
+// ─── MONTHLY CHECKIN & HISTORIC SNAPSHOT ENGINE ───
 function checkMonthlyCheckin() {
   const now = new Date();
   const key = `${now.getFullYear()}-${now.getMonth()}`;
@@ -1161,14 +1261,13 @@ function saveCheckin() {
   const now = new Date();
   const key = `${now.getFullYear()}-${now.getMonth()}`;
   
-  // Logge echten historischen Kombi-Snapshot ein
   state.balanceSnapshots[key] = {
     cash: val,
     depot: getDepotValueEUR(),
     manual: getManualAssetsTotal()
   };
   
-  triggerConfetti(); // Gamification Reward
+  triggerConfetti();
   addXP(50);
   saveState();
   document.getElementById('checkin-overlay').style.display = 'none';
@@ -1182,9 +1281,28 @@ function skipCheckin() {
   document.getElementById('checkin-overlay').style.display = 'none';
 }
 
+// ─── DATA HANDLERS ───
+function exportJSON(){
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`finanzplaner_backup.json`;a.click();
+}
+function exportCSV(){
+  let csv='Datum;Typ;Betrag;Notiz\n';
+  state.entries.forEach(e=>{ csv+=`${e.date};${e.type};${e.amount};${e.note||''}\n`; });
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`finanzplaner.csv`;a.click();
+}
+function importJSON(e){
+  const file=e.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=evt=>{ try{ state=JSON.parse(evt.target.result); saveState(); location.reload(); }catch(err){toast('Fehler beim Import')} };
+  reader.readAsText(file);
+}
+
 // ─── UI AUXILIARIES ───
 function openModal(id){document.getElementById(id).classList.add('open')}
 function closeModal(id){document.getElementById(id).classList.remove('open')}
+function openEntryModal() { populateCatSel('entry','expense'); openModal('entry-modal'); }
 function setEntryType(t){entryType=t; populateCatSel('entry',t)}
 function populateCatSel(prefix,type){
   document.getElementById(prefix+'-category').innerHTML = state.categories[type].map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
@@ -1228,6 +1346,35 @@ function selectPortfolioAsset(t,type){
   document.getElementById('pm-assettype').value=type;
   document.getElementById('pm-selected').textContent=`Ausgewählt: ${t}`;
   document.getElementById('pm-suggestions').style.display='none';
+}
+
+function runSplash(onDone) {
+  const splash = document.getElementById('splash-screen');
+  const bar = document.getElementById('splash-bar');
+  const status = document.getElementById('splash-status');
+  if (!splash) { onDone(); return; }
+
+  const steps = [
+    { pct: 30, text: 'Daten werden geladen…' },
+    { pct: 70, text: 'Gamification & Core werden geladen…' },
+    { pct: 100, text: 'Bereit! 🚀' }
+  ];
+
+  let i = 0;
+  const tick = () => {
+    if (i < steps.length) {
+      bar.style.width = steps[i].pct + '%';
+      status.textContent = steps[i].text;
+      i++;
+      setTimeout(tick, 200);
+    } else {
+      setTimeout(() => {
+        splash.style.opacity = '0';
+        setTimeout(() => { splash.style.display = 'none'; onDone(); }, 400);
+      }, 200);
+    }
+  };
+  tick();
 }
 
 window.onload=init;
